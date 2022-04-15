@@ -1,16 +1,18 @@
 version: "3"
 services:
   elasticsearch:
-    image: elasticsearch:7.9.1
+    image: elasticsearch:7.9.2
     container_name: elasticsearch
     environment:
-      - cluster.name=docker-cluster
+      - "cluster.name=elasticsearch" #设置集群名称为elasticsearch
+      - "discovery.type=single-node" #以单一节点模式启动
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m" #设置使用jvm内存大小
+      - "ELASTIC_PASSWORD=elasticpwd"    #密码
+      - "xpack.security.enabled=true" 
       - bootstrap.memory_lock=true
       - action.destructive_requires_name=true
       - http.cors.enabled=true
       - http.cors.allow-origin=*
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
-      - discovery.type=single-node
     ports:
       - "9200:9200"
       - "9300:9300"
@@ -24,18 +26,21 @@ services:
         hard: 65536
 
   kibana:
-    image: kibana:7.9.1
+    image: kibana:7.9.2
     container_name: kibana
     ports:
       - "5601:5601"
-    environment:
-      I18N_LOCALE: zh-CN
     restart: always
     depends_on:
       - elasticsearch
+    environment:
+      - "elasticsearch.hosts=http://es:9200" #设置访问elasticsearch的地址
+      - "ELASTICSEARCH_USERNAME=elastic"    
+      - "ELASTICSEARCH_PASSWORD=elasticpwd"    #elastic密码
+      - "I18N_LOCALE=zh-CN"                 #中文
 
   filebeat:
-    image: docker.elastic.co/beats/filebeat:7.9.1
+    image: docker.elastic.co/beats/filebeat:7.9.2
     hostname: filebeat
     container_name: filebeat
     volumes:
