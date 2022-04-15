@@ -8,7 +8,7 @@ services:
       - "discovery.type=single-node"        #以单一节点模式启动
       - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"  #设置使用jvm内存大小
       - "ELASTIC_PASSWORD=elastic@pwd"      #密码
-      - "xpack.security.enabled=true" 
+      - "xpack.security.enabled=true"
       - bootstrap.memory_lock=true
       - action.destructive_requires_name=true
       - http.cors.enabled=true
@@ -16,6 +16,9 @@ services:
     ports:
       - "9200:9200"
       - "9300:9300"
+    volumes:
+      - ./elasticsearch/plugins:/usr/share/elasticsearch/plugins    #插件文件挂载
+      - ./elasticsearch/data:/usr/share/elasticsearch/data          #数据文件挂载
     restart: always
     ulimits:
       memlock:
@@ -35,17 +38,27 @@ services:
       - elasticsearch
     environment:
       - "elasticsearch.hosts=http://elasticsearch:9200"    #设置访问elasticsearch的地址
-      - "ELASTICSEARCH_USERNAME=elastic"    
-      - "ELASTICSEARCH_PASSWORD=elastic@pwd"     #elastic密码
-      - "I18N_LOCALE=zh-CN"                     #中文
+      - "ELASTICSEARCH_USERNAME=elastic"
+      - "ELASTICSEARCH_PASSWORD=elastic@pwd"               #elastic密码
+      - "I18N_LOCALE=zh-CN"                                #中文
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:7.9.2
     hostname: filebeat
     container_name: filebeat
     volumes:
-      - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
-      - ./elk/filebeat/logs:/usr/share/filebeat/logs
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - ./filebeat/logs:/usr/share/filebeat/logs
     restart: always
     environment:
       - TZ=Asia/Shanghai
+
+  logstash:
+    image: logstash:7.9.2
+    container_name: logstash
+    volumes:
+      - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    depends_on:
+      - elasticsearch
+    ports:
+      - 4560:4560
